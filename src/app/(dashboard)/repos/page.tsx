@@ -346,7 +346,7 @@ export default function ReposPage() {
         ) : connectedRepos.data?.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
-              <div className="mx-auto size-14 rounded-full bg-muted flex items-center justify-center">
+              <div className="mx-auto h-14 rounded-full bg-muted flex items-center justify-center">
                 <FolderGit2 className="size-7 text-muted-foreground" />
               </div>
               <p className="mt-4 font-medium">
@@ -363,7 +363,7 @@ export default function ReposPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {connectedRepos.data?.map((repo) => (
               <ConnectRepoCard
                 key={repo.id}
