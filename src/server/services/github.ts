@@ -1,5 +1,33 @@
 import { db } from "@/lib/db";
 
+
+export interface GitHubUser {
+  login: string;
+  avatar_url: string;
+}
+
+export interface GitHubPullRequest {
+  id: number;
+  number: number;
+  title: string;
+  state: "open" | "closed";
+  html_url: string;
+  user: GitHubUser;
+  created_at: string;
+  updated_at: string;
+  merged_at: string | null;
+  draft: boolean;
+  head: {
+    ref: string;
+    sha: string;
+  };
+  base: {
+    ref: string;
+  };
+  additions: number;
+  deletions: number;
+  changed_files: number;
+}
 export interface GithubRepo {
     id: number;
     name: string;
@@ -54,4 +82,50 @@ export async function fetchGithubRepos(accessToken: string): Promise<GithubRepo[
     }
 
     return repos;
+}
+
+export async function fetchPullRequests(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  state: "open" | "closed" | "all" = "open"
+): Promise<GitHubPullRequest[]>{
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/pulls?state=${state}&per_page=30&sort=updated&direction=desc`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Github API error: ${response.status}`);
+  }
+
+  return (await response.json()) as GitHubPullRequest[];
+}
+
+export async function fetchPullRequest(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  prNumber: number,
+): Promise<GitHubPullRequest> {
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github.v3+json",
+      },
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Github API error: ${response.status}`);
+  }
+
+  return (await response.json()) as GitHubPullRequest;
 }
