@@ -363,7 +363,7 @@ export default function ReposPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 ">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {connectedRepos.data?.map((repo) => (
               <ConnectRepoCard
                 key={repo.id}
