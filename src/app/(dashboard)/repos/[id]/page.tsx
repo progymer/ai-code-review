@@ -40,8 +40,12 @@ export default function RepositoryDetailPage({ params }: PageProps) {
   });
 
   const pullRequests = trpc.pullRequest.list.useQuery(
-    { repositoryId: id, state: prState },
+    { repositoryId: id, state: "all" },
     { enabled: !!id },
+  );
+
+  const filteredPRs = pullRequests.data?.filter((pr) =>
+    prState === "all" ? true : pr.state === prState,
   );
 
   const prCounts = {
@@ -205,7 +209,7 @@ export default function RepositoryDetailPage({ params }: PageProps) {
               </p>
             </CardContent>
           </Card>
-        ) : pullRequests.data?.length === 0 ? (
+        ) : filteredPRs?.length === 0 ? (
           <Card>
             <CardContent className="py-16 text-center">
               <div className="mx-auto size-12 rounded-full bg-muted flex items-center justify-center">
@@ -220,7 +224,7 @@ export default function RepositoryDetailPage({ params }: PageProps) {
             </CardContent>
           </Card>
         ) : (
-          pullRequests.data?.map((pr) => (
+          filteredPRs?.map((pr) => (
             <PullRequestCard key={pr.id} pr={pr} repositoryId={id} />
           ))
         )}
