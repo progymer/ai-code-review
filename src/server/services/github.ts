@@ -1,5 +1,22 @@
 import { db } from "@/lib/db";
 
+export interface GitHubPullRequestFile {
+  sha: string;
+  filename: string;
+  status:
+    | "added"
+    | "removed"
+    | "modified"
+    | "renamed"
+    | "copied"
+    | "changed"
+    | "unchanged";
+  additions: number;
+  deletions: number;
+  changes: number;
+  patch?: string;
+  previous_filename?: string;
+}
 
 export interface GitHubUser {
   login: string;
@@ -29,67 +46,70 @@ export interface GitHubPullRequest {
   changed_files: number;
 }
 export interface GithubRepo {
-    id: number;
-    name: string;
-    full_name: string;
-    private: boolean;
-    html_url: string;
-    description: string | null;
-    language: string | null;
-    stargazers_count: number;
-    updated_at: string;
+  id: number;
+  name: string;
+  full_name: string;
+  private: boolean;
+  html_url: string;
+  description: string | null;
+  language: string | null;
+  stargazers_count: number;
+  updated_at: string;
 }
 
+export async function getGithubAccessToken(
+  userId: string,
+): Promise<string | null> {
+  const account = await db.account.findFirst({
+    where: {
+      userId,
+      providerId: "github",
+    },
+    select: {
+      accessToken: true,
+    },
+  });
 
-export async function getGithubAccessToken(userId:string): Promise<string | null> {
-    const account = await db.account.findFirst({
-        where: {
-            userId,
-            providerId: "github",
-        },
-        select: {
-            accessToken: true,
-        },
-    });
-
-    return account?.accessToken ?? null;
+  return account?.accessToken ?? null;
 }
 
-export async function fetchGithubRepos(accessToken: string): Promise<GithubRepo[]> {
-    const repos: GithubRepo[] = [];
-    let page = 1;
-    const perPage = 100;
+export async function fetchGithubRepos(
+  accessToken: string,
+): Promise<GithubRepo[]> {
+  const repos: GithubRepo[] = [];
+  let page = 1;
+  const perPage = 100;
 
-    while(true) {
-        const response = await fetch(
-          `https://api.github.com/user/repos?per_page=${perPage}&page=${page}&sort=updated`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              Accept: "application/vnd.github.v3+json",
-            },
-          },
-        );
+  while (true) {
+    const response = await fetch(
+      `https://api.github.com/user/repos?per_page=${perPage}&page=${page}&sort=updated`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      },
+    );
 
-        if(!response.ok){
-            throw new Error(`Failed to fetch Github repos: ${response.status}`)
-        }
-
-        const data = (await response.json()) as GithubRepo[];
-        repos.push(...data);
-        if (data.length < perPage) break;
-        page++;
+    if (!response.ok) {
+      throw new Error(`Failed to fetch Github repos: ${response.status}`);
     }
 
-    return repos;
+    const data = (await response.json()) as GithubRepo[];
+    repos.push(...data);
+    if (data.length < perPage) break;
+    page++;
+  }
+
+  return repos;
 }
 
 export async function fetchPullRequests(
   accessToken: string,
   owner: string,
   repo: string,
-  state: "open" | "closed" | "all" = "open"
-): Promise<GitHubPullRequest[]>{
+  state: "open" | "closed" | "all" = "open",
+): Promise<GitHubPullRequest[]> {
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/pulls?state=${state}&per_page=30&sort=updated&direction=desc`,
     {
@@ -136,4 +156,39 @@ export async function fetchPullRequest(
   }
 
   return (await response.json()) as GitHubPullRequest;
+}
+
+export async function fetchPullRequestFiles(
+  accessToken: string,
+  owner: string,
+  repo: string,
+  prNumber: number,
+): Promise<GitHubPullRequestFile[]> {
+  const files: GitHubPullRequestFile[] = [];
+  let page = 1;
+  const perPage = 100;
+
+  while (true) {
+    const response = await fetch(
+      `https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber}/files?per_page=${perPage}&page=${page}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          Accept: "application/vnd.github.v3+json",
+        },
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`GitHub API error: ${response.status}`);
+    }
+
+    const data = (await response.json()) as GitHubPullRequestFile[];
+    files.push(...data);
+
+    if (data.length < perPage) break;
+    page++;
+  }
+
+  return files;
 }
