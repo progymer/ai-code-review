@@ -266,7 +266,7 @@ function PullRequestCard({ pr, repositoryId }: PullRequestCardProps) {
               {isMerged ? (
                 <GitMerge className="size-4 text-purple-500" />
               ) : pr.state === "closed" ? (
-                <XCircle className="size-4" />
+                <XCircle className="size-4 text-red-500" />
               ) : (
                 <GitPullRequest className="size-4 text-emerald-500" />
               )}
