@@ -104,7 +104,15 @@ export async function fetchPullRequests(
     throw new Error(`Github API error: ${response.status}`);
   }
 
-  return (await response.json()) as GitHubPullRequest[];
+  const pulls = (await response.json()) as GitHubPullRequest[];
+
+  // The list endpoint doesn't include additions/deletions/changed_files,
+  // so we fetch each PR individually to get those stats.
+  const detailed = await Promise.all(
+    pulls.map((pr) => fetchPullRequest(accessToken, owner, repo, pr.number)),
+  );
+
+  return detailed;
 }
 
 export async function fetchPullRequest(
