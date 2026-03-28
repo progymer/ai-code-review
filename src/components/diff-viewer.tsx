@@ -95,7 +95,7 @@ export function DiffViewer({ files }: DiffViewerProps) {
           <Button variant={"outline"} size={"sm"} onClick={collapseAll}>
             Collapse all
           </Button>
-          <Button size={"sm"} onClick={expandAll}>
+          <Button size={"sm"} onClick={expandAll} className="hover:opacity-80">
             Expand all
           </Button>
         </div>
