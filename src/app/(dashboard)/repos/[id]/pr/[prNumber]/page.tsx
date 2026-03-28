@@ -37,7 +37,7 @@ type PageProps = {
 export default function PullRequestDetailPage({ params }: PageProps) {
   const { id, prNumber } = use(params);
   const prNum = parseInt(prNumber, 10);
-  const [activeTab, setActiveTab] = useState<"review" | "files">("review")
+  const [activeTab, setActiveTab] = useState<"review" | "files">("review");
 
   const pr = trpc.pullRequest.get.useQuery(
     { repositoryId: id, prNumber: prNum },
@@ -48,6 +48,31 @@ export default function PullRequestDetailPage({ params }: PageProps) {
     { repositoryId: id, prNumber: prNum },
     { enabled: !isNaN(prNum) },
   );
+
+  const latestReview = trpc.review.getLatestForPR.useQuery(
+    { repositoryId: id, prNumber: prNum },
+    {
+      enabled: !isNaN(prNum),
+      refetchInterval: (query) => {
+        const status = query.state.data?.status;
+        if (status === "PENDING" || status === "PROCESSING") {
+          return 2000;
+        }
+        return false;
+      },
+    },
+  );
+
+  const triggerReview = trpc.review.trigger.useMutation({
+    onSuccess: () => {
+      latestReview.refetch();
+      pr.refetch();
+    },
+  });
+
+  const isReviewing =
+    latestReview.data?.status === "PENDING" ||
+    latestReview.data?.status === "PROCESSING";
 
   if (pr.isLoading) {
     return (
@@ -184,7 +209,7 @@ export default function PullRequestDetailPage({ params }: PageProps) {
                     Merged request
                   </p>
                   <div className="flex items-center gap-2 text-sm">
-                    <code className="px-2 py-0.5 rounded bg-secondary font-mono text-xs truncate">
+                    <code className="px-2 py-0.5 rounded bg-secondary font-mono text-xs min-w-30 truncate">
                       {pr.data.headRef}
                     </code>
                     <ArrowRight className="size-3 text-muted-foreground shrink-0" />
@@ -218,6 +243,35 @@ export default function PullRequestDetailPage({ params }: PageProps) {
             </div>
 
             {/* REVIEW ACTION CLUSTER */}
+            <div className="px-6 py-4 flex items-center gap-3">
+              <div className="flex items-center gap-2 rounded-lg px-3 py-1.5">
+                <ReviewStatusBadge
+                  status={latestReview.data?.status ?? null}
+                  completedAt={
+                    latestReview.data?.status === "COMPLETED"
+                      ? latestReview.data.createdAt
+                      : null
+                  }
+                />
+                {!isReviewing && <div className="h-4 w-px bg-border" />}
+                {isReviewing ? null : (
+                  <Button
+                    size={"sm"}
+                    onClick={() => {
+                      triggerReview.mutate({
+                        repositoryId: id,
+                        prNumber: prNum,
+                      });
+                    }}
+                    disabled={triggerReview.isPending}
+                    className="gap-1.5 h-auto py-1 px-2 text-xs hover:opacity-80"
+                  >
+                    <Wand2 />
+                    {latestReview.data ? "Re-run" : "Review"}
+                  </Button>
+                )}
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -225,6 +279,20 @@ export default function PullRequestDetailPage({ params }: PageProps) {
       {/* TABS */}
       <div className="border-b border-border/60">
         <div className="flex items-center gap-1">
+          <TabButton
+            active={activeTab === "review"}
+            onClick={() => setActiveTab("review")}
+            icon={ScanSearch}
+            label="Reviews"
+            count={
+              latestReview.data?.status === "COMPLETED"
+                ? Array.isArray(latestReview.data.comments)
+                  ? latestReview.data.comments.length
+                  : 0
+                : 0
+            }
+          />
+
           <TabButton
             active={activeTab === "files"}
             onClick={() => setActiveTab("files")}
@@ -236,6 +304,35 @@ export default function PullRequestDetailPage({ params }: PageProps) {
       </div>
 
       {/* TAB CONTENT */}
+      {activeTab === "review" && (
+        <div>
+          {latestReview.data ? (
+            <div></div>
+          ) : (
+            <Card>
+              <CardContent className="py-16 text-center">
+                <div className="mx-auto size-14 rounded-full bg-primary/10 flex items-center justify-center">
+                  <ScanSearch className="size-7 text-primary" />
+                </div>
+                <p className="mt-4 font-medium">No reviews yet.</p>
+                <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+                  Click &quot;Run AI Review&quot; to analyze this pull request
+                  for bugs, security issues, and improvements.
+                </p>
+                <Button
+                  className="mt-6 hover:opacity-80"
+                  onClick={() => 
+                    triggerReview.mutate({ repositoryId: id, prNumber: prNum})
+                  }
+                  disabled={triggerReview.isPending}
+                >
+                  Run AI Review
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
       {activeTab === "files" && (
         <div>
           {files.isLoading ? (
@@ -280,35 +377,35 @@ function TabButton({
   label: string;
   count?: number;
 }) {
-    return (
-      <button
-        onClick={onClick}
-        className={cn(
-          "relative px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2",
-          active
-            ? "text-foreground"
-            : "text-muted-foreground hover:text-foreground",
-        )}
-      >
-        <Icon className="size-4" />
-        {label}
-        {count !== undefined && (
-          <span
-            className={cn(
-              "px-1.5 py-0.5 text-xs rounded-md tabular-nums",
-              active
-                ? "bg-foreground/10 text-foreground"
-                : "bg-muted text-muted-foreground",
-            )}
-          >
-            {count}
-          </span>
-        )}
-        {active && (
-          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-        )}
-      </button>
-    );
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "relative px-4 py-2.5 text-sm font-medium transition-colors flex items-center gap-2",
+        active
+          ? "text-foreground"
+          : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      <Icon className="size-4" />
+      {label}
+      {count !== undefined && (
+        <span
+          className={cn(
+            "px-1.5 py-0.5 text-xs rounded-md tabular-nums",
+            active
+              ? "bg-foreground/10 text-foreground"
+              : "bg-muted text-muted-foreground",
+          )}
+        >
+          {count}
+        </span>
+      )}
+      {active && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+      )}
+    </button>
+  );
 }
 
 function StatItem({
@@ -324,21 +421,21 @@ function StatItem({
   colorClass: string;
   bgClass: string;
 }) {
-    return (
-      <div className="flex items-center gap-2">
-        <div className={cn("p-1.5 rounded-md", bgClass)}>
-          <Icon className={cn("size-3.5", colorClass)} />
-        </div>
-        <div>
-          <p className={cn("text-sm font-semibold tabular-nums", colorClass)}>
-            {value.toLocaleString()}
-          </p>
-          {label && (
-            <p className={cn("text-xs font-medium", colorClass)}>{label}</p>
-          )}
-        </div>
+  return (
+    <div className="flex items-center gap-2">
+      <div className={cn("p-1.5 rounded-md", bgClass)}>
+        <Icon className={cn("size-3.5", colorClass)} />
       </div>
-    );
+      <div>
+        <p className={cn("text-sm font-semibold tabular-nums", colorClass)}>
+          {value.toLocaleString()}
+        </p>
+        {label && (
+          <p className={cn("text-xs font-medium", colorClass)}>{label}</p>
+        )}
+      </div>
+    </div>
+  );
 }
 
 function PRStatusBadge({
@@ -389,4 +486,81 @@ function PRStatusBadge({
         Open
       </Badge>
     );
-  }}
+  }
+}
+
+function ReviewStatusBadge({
+  status,
+  completedAt,
+}: {
+  status: string | null;
+  completedAt?: Date | null;
+}) {
+  const getTimeAgo = (date: Date) => {
+    const now = new Date();
+    const diffMs = now.getTime() - new Date(date).getTime();
+    const diffMin = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMin / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffMin < 1) return "just now";
+    if (diffMin < 60) return `${diffMin} min ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${diffDays}d ago`;
+  };
+
+  if (!status) {
+    return (
+      <Badge
+        variant="outline"
+        className="gap-1.5 border bg-muted text-muted-foreground"
+      >
+        <Clock className="h-3 w-3" />
+        Not reviewed
+      </Badge>
+    );
+  }
+
+  const config = {
+    COMPLETED: {
+      icon: CheckCircle,
+      label: completedAt
+        ? `AI Review completed · ${getTimeAgo(completedAt)}`
+        : "AI Review completed",
+      className:
+        "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20",
+    },
+    PROCESSING: {
+      icon: Loader2,
+      label: "Analyzing code…",
+      className:
+        "bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20",
+      spin: true,
+    },
+    PENDING: {
+      icon: Clock,
+      label: "Queued for review",
+      className:
+        "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20",
+    },
+    FAILED: {
+      icon: XCircle,
+      label: "Review failed",
+      className:
+        "bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20",
+    },
+  }[status] ?? {
+    icon: Clock,
+    label: "Not reviewed",
+    className: "bg-muted text-muted-foreground",
+  };
+
+  const Icon = config.icon;
+
+  return (
+    <Badge variant="outline" className={cn("gap-1.5 border", config.className)}>
+      <Icon className={cn("h-3 w-3", config.spin && "animate-spin")} />
+      {config.label}
+    </Badge>
+  );
+}
