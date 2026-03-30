@@ -92,10 +92,19 @@ export function DiffViewer({ files }: DiffViewerProps) {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant={"outline"} size={"sm"} onClick={collapseAll}>
+          <Button
+            variant={"outline"}
+            size={"sm"}
+            onClick={collapseAll}
+            className="dark:bg-transparent dark:border dark:border-border"
+          >
             Collapse all
           </Button>
-          <Button size={"sm"} onClick={expandAll} className="hover:opacity-80">
+          <Button
+            size={"sm"}
+            onClick={expandAll}
+            className="dark:bg-transparent dark:border dark:border-border dark:text-foreground dark:hover:bg-accent hover:opacity-80"
+          >
             Expand all
           </Button>
         </div>
