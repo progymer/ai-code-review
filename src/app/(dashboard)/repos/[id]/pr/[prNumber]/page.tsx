@@ -29,6 +29,7 @@ import {
 import { cn } from "@/lib/utils";
 import { DiffViewer } from "@/components/diff-viewer";
 import { formatDate } from "@/lib/utils";
+import { ReviewResult } from "@/components/review-result";
 
 type PageProps = {
   params: Promise<{ id: string; prNumber: string }>;
@@ -264,7 +265,7 @@ export default function PullRequestDetailPage({ params }: PageProps) {
                       });
                     }}
                     disabled={triggerReview.isPending}
-                    className="gap-1.5 h-auto py-1 px-2 text-xs hover:opacity-80"
+                    className="gap-1.5 h-auto py-1 px-2 text-xs hover:opacity-80 dark:bg-transparent dark:border dark:border-border dark:text-foreground dark:hover:bg-accent"
                   >
                     <Wand2 />
                     {latestReview.data ? "Re-run" : "Review"}
@@ -307,7 +308,15 @@ export default function PullRequestDetailPage({ params }: PageProps) {
       {activeTab === "review" && (
         <div>
           {latestReview.data ? (
-            <div></div>
+            <ReviewResult
+              review={latestReview.data}
+              onRerun={() => {
+                triggerReview.mutate({
+                  repositoryId: id,
+                  prNumber: prNum,
+                });
+              }}
+            />
           ) : (
             <Card>
               <CardContent className="py-16 text-center">
@@ -321,8 +330,8 @@ export default function PullRequestDetailPage({ params }: PageProps) {
                 </p>
                 <Button
                   className="mt-6 hover:opacity-80"
-                  onClick={() => 
-                    triggerReview.mutate({ repositoryId: id, prNumber: prNum})
+                  onClick={() =>
+                    triggerReview.mutate({ repositoryId: id, prNumber: prNum })
                   }
                   disabled={triggerReview.isPending}
                 >
