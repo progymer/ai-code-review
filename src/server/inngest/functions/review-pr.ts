@@ -1,5 +1,6 @@
 import { inngest } from "../client";
 import { db } from "@/lib/db";
+import { reviewCode } from "@/server/services/ai";
 import {
   fetchPullRequest,
   fetchPullRequestFiles,
@@ -20,37 +21,48 @@ export const reviewPR = inngest.createFunction(
   {
     id: "review-pr",
     retries: 2,
-    triggers: [{ event: "review/pr.requested" }], 
+    onFailure: async ({ event, error }) => {
+      const { reviewId } = event.data.event.data;
+
+      await db.review.update({
+        where: { id: reviewId },
+        data: { 
+          status: "FAILED",
+          error: error.message ?? "Unknown error",
+        },
+      });
+    },    
+    triggers: [{ event: "review/pr.requested" }],
   },
   async ({ event, step }) => {
     const { reviewId, repositoryId, prNumber, userId } = event.data;
 
     await step.run("update-status-processing", async () => {
-        await db.review.update({
-            where: { id: reviewId },
-            data: { status: "PROCESSING"}
-        })
-    })
+      await db.review.update({
+        where: { id: reviewId },
+        data: { status: "PROCESSING" },
+      });
+    });
 
     const repository = await step.run("get-repository", async () => {
-        return db.repository.findUnique({
-            where: { id: repositoryId}
-        })
-    })
+      return db.repository.findUnique({
+        where: { id: repositoryId },
+      });
+    });
 
-    if(!repository) {
-        await step.run("mark-failed-no-repo", async () => {
-            await db.review.update({
-                where: { id: reviewId },
-                data: { status: "FAILED", error: "No repository found"}
-            })
-        })
-        return { success: false, error: "No repository found" };
+    if (!repository) {
+      await step.run("mark-failed-no-repo", async () => {
+        await db.review.update({
+          where: { id: reviewId },
+          data: { status: "FAILED", error: "No repository found" },
+        });
+      });
+      return { success: false, error: "No repository found" };
     }
 
     const accessToken = await step.run("get-access-token", async () => {
-        return getGithubAccessToken(userId)
-    })
+      return getGithubAccessToken(userId);
+    });
 
     if (!accessToken) {
       await step.run("mark-failed-no-token", async () => {
@@ -83,33 +95,35 @@ export const reviewPR = inngest.createFunction(
       return fetchPullRequestFiles(accessToken, owner, repo, prNumber);
     });
 
-    // todo : add ai review logic here
+    const pr = await step.run("fetch-pr", async () => {
+      return fetchPullRequest(accessToken, owner, repo, prNumber);
+    });
 
     const reviewResult = await step.run("generate-review", async () => {
-        return {
-            summary: `Reviewed ${files.length} files with ${files.reduce((sum, f) => sum + f.additions, 0)} additions and ${files.reduce((sum, f) => sum + f.deletions, 0)} deletions.`,
-            riskScore: Math.floor(Math.random() * 100),
-            comments: files.slice(0, 3).map((file) => ({
-                file: file.filename,
-                line: 1,
-                severity: "low" as const,
-                message: `File ${file.status}: ${file.additions} additions, ${file.deletions} deletions`,
-            }))
-        }
-    })
+      return reviewCode(
+        pr.title,
+        files.map((f) => ({
+          filename: f.filename,
+          status: f.status,
+          additions: f.additions,
+          deletions: f.deletions,
+          patch: f.patch,
+        })),
+      );
+    });
 
     await step.run("save-review-result", async () => {
-        await db.review.update({
-            where: { id: reviewId },
-            data: {
-                status: "COMPLETED",
-                summary: reviewResult.summary,
-                riskScore: reviewResult.riskScore,
-                comments: reviewResult.comments,
-            }
-        })
-    })
+      await db.review.update({
+        where: { id: reviewId },
+        data: {
+          status: "COMPLETED",
+          summary: reviewResult.summary,
+          riskScore: reviewResult.riskScore,
+          comments: reviewResult.comments,
+        },
+      });
+    });
 
-    return { success: true, reviewId }
+    return { success: true, reviewId };
   },
 );
