@@ -403,7 +403,7 @@ function ConnectRepoCard({
                 className={cn(
                   "size-10 rounded-lg flex items-center justify-center shrink-0 transition-colors",
                   repo.private
-                    ? "bg-emerald-500/10 group-hover:bg-emerald-500/15"
+                    ? "bg-amber-500/10 group-hover:bg-amber-500/15"
                     : "bg-emerald-500/10 group-hover:bg-emerald-500/15",
                 )}
               >
