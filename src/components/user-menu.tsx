@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { LogOut, Settings, User, ChevronDown } from "lucide-react";
+import Link from "next/link";
 
 interface UserProps {
     id: string;
@@ -83,13 +84,17 @@ export function UserMenu({user}: {user: UserProps}){
             </div>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="gap-2 py-2 cursor-pointer" disabled>
-            <User className="size-4" />
-            Profile
+          <DropdownMenuItem className="gap-2 py-2 cursor-pointer" asChild>
+            <Link href="/profile">
+              <User className="size-4" />
+              Profile
+            </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem className="gap-2 py-2 cursor-pointer" disabled>
-            <Settings className="size-4" />
-            Settings
+          <DropdownMenuItem className="gap-2 py-2 cursor-pointer" asChild>
+            <Link href="/settings">
+              <Settings className="size-4" />
+              Settings
+            </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
