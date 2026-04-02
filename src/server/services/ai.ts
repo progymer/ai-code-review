@@ -93,7 +93,7 @@ ${diffContent}`;
     generationConfig: {
       responseMimeType: "application/json",
       temperature: 0.3,
-      maxOutputTokens: 2000,
+      maxOutputTokens: 5000,
     },
   });
 
