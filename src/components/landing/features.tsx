@@ -118,7 +118,7 @@ export default function FeaturesSection() {
               key={index}
               variants={itemVariants}
               whileHover={{ y: -5 }}
-              className="relative group p-8 rounded-2xl border border-slate-100 bg-white hover:border-slate-200 hover:shadow-xl  transition-all duration-300"
+              className="relative group p-8 rounded-2xl border border-slate-100 bg-white hover:border-slate-200  transition-all duration-300"
             >
               {/* Icon Box */}
               <div
