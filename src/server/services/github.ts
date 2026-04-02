@@ -192,3 +192,36 @@ export async function fetchPullRequestFiles(
 
   return files;
 }
+
+export async function createGithubWebhook(
+  accessToken: string,
+  fullName: string,
+) {
+  const [owner, repo] = fullName.split("/");
+  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/github`;
+
+  const response = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/hooks`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: "web",
+        active: true,
+        events: ["pull_request"],
+        config: {
+          url: webhookUrl,
+          content_type: "json",
+          secret: process.env.GITHUB_WEBHOOK_SECRET,
+        },
+      }),
+    },
+  );
+
+  if (!response.ok && response.status !== 422) {
+    console.error("Failed to create webhook for", fullName);
+  }
+}
