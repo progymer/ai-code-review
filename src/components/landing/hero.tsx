@@ -31,10 +31,11 @@ export function Hero() {
     <section className="relative flex min-h-screen flex-col overflow-hidden bg-white">
       {/* dot grid */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.03]"
+        className="pointer-events-none absolute inset-0"
         style={{
           backgroundImage: "radial-gradient(circle, #000 1px, transparent 1px)",
           backgroundSize: "28px 28px",
+          opacity: 0.03,
         }}
       />
 
