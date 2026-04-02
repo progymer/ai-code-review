@@ -198,7 +198,7 @@ export async function createGithubWebhook(
   fullName: string,
 ) {
   const [owner, repo] = fullName.split("/");
-  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhook/github`;
+  const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/webhooks/github`;
 
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/hooks`,
