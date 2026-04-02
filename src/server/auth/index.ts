@@ -35,6 +35,11 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
+  user: {
+    deleteUser: {
+      enabled: true,
+    },
+  },
   trustedOrigins: [process.env.BETTER_AUTH_URL!],
 });
 

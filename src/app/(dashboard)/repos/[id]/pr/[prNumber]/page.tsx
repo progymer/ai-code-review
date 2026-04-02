@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   ArrowLeft,
@@ -68,6 +69,14 @@ export default function PullRequestDetailPage({ params }: PageProps) {
     onSuccess: () => {
       latestReview.refetch();
       pr.refetch();
+    },
+    onError: (error) => {
+      if (error.data?.code === "TOO_MANY_REQUESTS") {
+        toast.error("You've reached your daily review limit.", {
+          description: "Reviews will resume after the window resets.",
+          position: "top-center"
+        });
+      }
     },
   });
 
@@ -207,7 +216,7 @@ export default function PullRequestDetailPage({ params }: PageProps) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs text-muted-foreground mb-1">
-                    Merged request
+                    {isMerged ? "Merged" : "Merge"} request
                   </p>
                   <div className="flex items-center gap-2 text-sm">
                     <code className="px-2 py-0.5 rounded bg-secondary font-mono text-xs min-w-30 truncate">

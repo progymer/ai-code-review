@@ -6,6 +6,7 @@ import {
   fetchPullRequest,
   getGithubAccessToken,
 } from "@/server/services/github";
+import { ratelimit } from "@/lib/ratelimit";
 
 export const reviewRouter = createTRPCRouter({
   trigger: protectedProcedure
@@ -16,6 +17,14 @@ export const reviewRouter = createTRPCRouter({
       }),
     )
     .mutation(async ({ ctx, input }) => {
+      const { success } = await ratelimit.limit(ctx.user.id);
+      if (!success) {
+        throw new TRPCError({
+          code: "TOO_MANY_REQUESTS",
+          message: "Rate limit exceeded. Try again later.",
+        });
+      }
+
       const repository = await ctx.db.repository.findUnique({
         where: { id: input.repositoryId, userId: ctx.user.id },
       });

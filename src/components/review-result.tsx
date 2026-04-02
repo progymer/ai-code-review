@@ -49,70 +49,87 @@ interface ReviewResultProps {
 }
 
 export function ReviewResult({ review, onRerun }: ReviewResultProps) {
-  if (review.status === "PENDING") {
-    return (
-      <Card>
-        <CardContent className="py-12 px-6">
-          <div className="flex items-center gap-4">
-            <div className="size-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
-              <Clock className="size-5 text-amber-500" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium">Queued for review</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                This review is queued for review and will be processed soon.
-              </p>
-            </div>
-            <div className="flex items-center gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="size-1.5 rounded-full bg-amber-500"
-                  style={{
-                    animationDelay: `${i * 150}ms`,
-                    animation: `bounce 1s ${i * 150}ms infinite, pulse 1.5s ${i * 150}ms infinite`,
-                  }}
-                />
-              ))}
-            </div>
+if (review.status === "PENDING") {
+  return (
+    <Card>
+      <CardContent className="py-12 px-6">
+        <style>{`
+            @keyframes wave {
+              0%, 60%, 100% { transform: translateY(0); }
+              30% { transform: translateY(-6px); }
+            }
+            @keyframes pulse {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.4; }
+            }
+          `}</style>
+        <div className="flex items-center gap-4">
+          <div className="size-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Clock className="size-5 text-amber-500" />
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (review.status === "PROCESSING") {
-    return (
-      <Card>
-        <CardContent className="py-12 px-6">
-          <div className="flex items-center gap-4">
-            <div className="size-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
-              <Loader2 className="size-5 text-blue-600 dark:text-blue-400 animate-spin" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium">Analyzing code…</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Scanning for bugs, security issues, and improvements
-              </p>
-            </div>
-            <div className="flex items-center gap-1">
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  className="size-1.5 rounded-full bg-blue-500"
-                  style={{
-                    animationDelay: `${i * 150}ms`,
-                    animation: `bounce 1s ${i * 150}ms infinite, pulse 1.5s ${i * 150}ms infinite`,
-                  }}
-                />
-              ))}
-            </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium">Queued for review</h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              This review is queued for review and will be processed soon.
+            </p>
           </div>
-        </CardContent>
-      </Card>
-    );
-  }
+          <div className="flex items-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="size-1.5 rounded-full bg-amber-500"
+                style={{
+                  animation: `wave 1.2s ease-in-out ${i * 150}ms infinite, pulse 1.5s ease-in-out ${i * 150}ms infinite`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
+if (review.status === "PROCESSING") {
+  return (
+    <Card>
+      <CardContent className="py-12 px-6">
+        <style>{`
+            @keyframes wave {
+              0%, 60%, 100% { transform: translateY(0); }
+              30% { transform: translateY(-6px); }
+            }
+            @keyframes pulse {
+              0%, 100% { opacity: 1; }
+              50% { opacity: 0.4; }
+            }
+          `}</style>
+        <div className="flex items-center gap-4">
+          <div className="size-10 rounded-full bg-blue-500/10 flex items-center justify-center shrink-0">
+            <Loader2 className="size-5 text-blue-600 dark:text-blue-400 animate-spin" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-medium">Analyzing code…</h3>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Scanning for bugs, security issues, and improvements
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="size-1.5 rounded-full bg-blue-500"
+                style={{
+                  animation: `wave 1.2s ease-in-out ${i * 150}ms infinite, pulse 1.5s ease-in-out ${i * 150}ms infinite`,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
   if (review.status === "FAILED") {
     return (
       <Card className="overflow-hidden border-destructive/20">

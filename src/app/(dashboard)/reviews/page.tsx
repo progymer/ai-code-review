@@ -112,7 +112,7 @@ export default function ReviewPage(){
         </div>
 
         {reviews.isLoading ? (
-          <div>
+          <div className="space-y-3">
             {[...Array(5)].map((_, i) => (
               <Skeleton key={i} className="h-28 w-full rounded-xl" />
             ))}

@@ -21,17 +21,22 @@ export const reviewPR = inngest.createFunction(
   {
     id: "review-pr",
     retries: 2,
+    throttle: {
+      limit: 25,
+      period: "1d",
+      key: "event.data.userId",
+    },
     onFailure: async ({ event, error }) => {
       const { reviewId } = event.data.event.data;
 
       await db.review.update({
         where: { id: reviewId },
-        data: { 
+        data: {
           status: "FAILED",
           error: error.message ?? "Unknown error",
         },
       });
-    },    
+    },
     triggers: [{ event: "review/pr.requested" }],
   },
   async ({ event, step }) => {

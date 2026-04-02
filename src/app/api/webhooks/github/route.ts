@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
 import { db } from "@/lib/db";
 import { inngest } from "@/server/inngest";
+import { ratelimit } from "@/lib/ratelimit";
 
 interface PullRequestPayload {
   action: string;
@@ -76,6 +77,15 @@ export async function POST(request: NextRequest) {
   if (!repository) {
     return NextResponse.json(
       { message: "Repository not connected" },
+      { status: 200 },
+    );
+  }
+
+  // check rate limiting
+  const { success } = await ratelimit.limit(repository.userId);
+  if (!success) {
+    return NextResponse.json(
+      { message: "Rate limit exceeded, review skipped" },
       { status: 200 },
     );
   }
